@@ -5,11 +5,6 @@ using PlayWithSQLITE.Services;
 
 namespace PlayWithSQLITE.ViewModels;
 
-/// <summary>
-/// ViewModel למסך הדוחות והשאילתות המתקדמות (ReportsPage).
-/// האוספים ו-StatusMessage מוכנים ומחוברים ל-XAML.
-/// משימתכם בשלב 5 (ראו מדריך 05): יצירת הפקודות (ICommand) והפעלת שאילתות הדוחות מ-IDatabaseService!
-/// </summary>
 public class ReportsViewModel : BaseViewModel
 {
     private readonly IDatabaseService _databaseService;
@@ -29,44 +24,96 @@ public class ReportsViewModel : BaseViewModel
         }
     }
 
-    // 💡 שלב 5: שלוש הפקודות המקושרות לכפתורים ב-ReportsPage.xaml
-    public ICommand? LoadReportsCommand { get; }
-    public ICommand? SeedDataCommand { get; }
-    public ICommand? ClearDataCommand { get; }
+    public ICommand LoadReportsCommand { get; }
+    public ICommand SeedDataCommand { get; }
+    public ICommand ClearDataCommand { get; }
 
     public ReportsViewModel(IDatabaseService databaseService)
     {
         _databaseService = databaseService;
         Title = "דוחות ושאילתות מתקדמות (JOIN & GROUP BY)";
 
-        // 💡 TODO (Student - שלב 5, ראו מדריך 05):
-        // אתחלו כאן את שלוש הפקודות:
-        // 1. LoadReportsCommand — טוענת את דוחות ה-JOIN וה-GROUP BY (LoadReportsAsync).
-        // 2. SeedDataCommand — זורעת נתוני הדגמה למסד ומרעננת את הדוחות (SeedDataAsync).
-        // 3. ClearDataCommand — מרוקנת את המסד ואת האוספים (ClearDataAsync).
+        LoadReportsCommand = new Command(async () => await LoadReportsAsync());
+        SeedDataCommand = new Command(async () => await SeedDataAsync());
+        ClearDataCommand = new Command(async () => await ClearDataAsync());
     }
 
     public async Task LoadReportsAsync()
     {
-        // 💡 TODO (Student - שלב 5):
-        // 1. מנעו ריצה כפולה בעזרת IsLoading בתוך try / catch / finally ועדכנו את StatusMessage.
-        // 2. שלפו את סיכומי הקורסים (GetCourseGradeSummariesAsync) לתוך CourseSummaries (אתחול המסד מתבצע אוטומטית בשירות!).
-        // 3. שלפו את התפלגות השכבות (GetStudentDistributionByGradeLevelAsync) לתוך GradeDistributions.
-        // 4. הציגו ב-StatusMessage כמה דוחות ושכבות נטענו.
-        await Task.CompletedTask;
+        if (IsLoading) return;
+
+        try
+        {
+            IsLoading = true;
+            StatusMessage = "טוען דוחות מרובי-טבלאות מהמסד...";
+
+            var summaries = await _databaseService.GetCourseGradeSummariesAsync();
+            CourseSummaries.Clear();
+            foreach (var s in summaries)
+            {
+                CourseSummaries.Add(s);
+            }
+
+            var distributions = await _databaseService.GetStudentDistributionByGradeLevelAsync();
+            GradeDistributions.Clear();
+            foreach (var d in distributions)
+            {
+                GradeDistributions.Add(d);
+            }
+
+            StatusMessage = $"נטענו {CourseSummaries.Count} דוחות קורסים ו-{GradeDistributions.Count} שכבות גיל.";
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"שגיאה בטעינת דוחות: {ex.Message}";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
     }
 
     private async Task SeedDataAsync()
     {
-        // 💡 TODO (Student - שלב 5):
-        // הפעילו את SeedSampleDataAsync() ב-_databaseService ולאחר מכן טענו מחדש את הדוחות (LoadReportsAsync).
-        await Task.CompletedTask;
+        if (IsLoading) return;
+
+        try
+        {
+            IsLoading = true;
+            StatusMessage = "מייצר נתוני הדגמה (מורים, קורסים, תלמידים ורישומים)...";
+            await _databaseService.SeedSampleDataAsync();
+            StatusMessage = "נתוני ההדגמה נוצרו בהצלחה!";
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"שגיאה ביצירת נתוני הדגמה: {ex.Message}";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+
+        await LoadReportsAsync();
     }
 
     private async Task ClearDataAsync()
     {
-        // 💡 TODO (Student - שלב 5):
-        // הפעילו את ClearAllDataAsync() ב-_databaseService, נקו את האוספים ועדכנו את StatusMessage.
-        await Task.CompletedTask;
+        try
+        {
+            IsLoading = true;
+            StatusMessage = "מוחק את כל הנתונים ממסד הנתונים...";
+            await _databaseService.ClearAllDataAsync();
+            CourseSummaries.Clear();
+            GradeDistributions.Clear();
+            StatusMessage = "המסד רוקן בהצלחה.";
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"שגיאה במחיקת נתונים: {ex.Message}";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
     }
 }

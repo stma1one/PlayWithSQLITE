@@ -21,21 +21,16 @@ namespace PlayWithSQLITE
 					fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
 				});
 
-			// =====================================================================
-			// 💡 שלב 5 — רישום שירות מסד הנתונים ב-DI Container (ראו מדריך 05):
-			// =====================================================================
-			// כדי שה-ViewModels יקבלו אוטומטית את שירות מסד הנתונים בבנאי שלהם,
-			// עלינו לרשום את הממשק IDatabaseService מול המימוש הקונקרטי DatabaseService בתוך builder.Services.
-			// חשבו: איזה מחזור חיים (Lifetime) מתאים לשירות מסד נתונים — AddSingleton או AddTransient? ומדוע?
-			// TODO (Student - שלב 5): הוסיפו כאן את שורת הרישום של IDatabaseService מול DatabaseService.
+			// שירות מסד הנתונים — Singleton (מופע יחיד משותף לכל חיי האפליקציה)
+			builder.Services.AddSingleton<IDatabaseService, DatabaseService>();
 
-			// ViewModels (מופע חדש בכל בקשה — Transient)
+			// ViewModels — Transient (מופע חדש בכל בקשה)
 			builder.Services.AddTransient<StudentsViewModel>();
 			builder.Services.AddTransient<CoursesViewModel>();
 			builder.Services.AddTransient<TeachersViewModel>();
 			builder.Services.AddTransient<ReportsViewModel>();
 
-			// Pages (מופע חדש בכל ניווט — Transient)
+			// Pages — Transient (מופע חדש בכל ניווט)
 			builder.Services.AddTransient<StudentsPage>();
 			builder.Services.AddTransient<CoursesPage>();
 			builder.Services.AddTransient<TeachersPage>();

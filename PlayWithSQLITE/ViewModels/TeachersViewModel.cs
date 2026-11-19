@@ -5,11 +5,6 @@ using PlayWithSQLITE.Services;
 
 namespace PlayWithSQLITE.ViewModels;
 
-/// <summary>
-/// ViewModel לניהול מסך המורים (TeachersPage).
-/// תשתית המאפיינים (Properties) והאוסף (ObservableCollection) מוכנה ומחוברת ל-XAML.
-/// משימתכם בשלב 5 (ראו מדריך 05): יצירת הפקודות (ICommand) והפעלת שירות מסד הנתונים!
-/// </summary>
 public class TeachersViewModel : BaseViewModel
 {
     private readonly IDatabaseService _databaseService;
@@ -28,8 +23,7 @@ public class TeachersViewModel : BaseViewModel
             if (_newFullName == value) return;
             _newFullName = value;
             OnPropertyChanged();
-            // 💡 שלב 5: לאחר יצירת AddTeacherCommand, כיצד נעדכן את הכפתור במסך שהתנאי CanExecute השתנה?
-            (AddTeacherCommand as Command)?.ChangeCanExecute();
+            ((Command)AddTeacherCommand).ChangeCanExecute();
         }
     }
 
@@ -41,7 +35,7 @@ public class TeachersViewModel : BaseViewModel
             if (_newEmail == value) return;
             _newEmail = value;
             OnPropertyChanged();
-            (AddTeacherCommand as Command)?.ChangeCanExecute();
+            ((Command)AddTeacherCommand).ChangeCanExecute();
         }
     }
 
@@ -67,21 +61,18 @@ public class TeachersViewModel : BaseViewModel
         }
     }
 
-    // 💡 שלב 5: מאפייני הפקודות שכבר מקושרים (Binding) לכפתורים ב-TeachersPage.xaml
-    public ICommand? LoadTeachersCommand { get; }
-    public ICommand? AddTeacherCommand { get; }
-    public ICommand? DeleteTeacherCommand { get; }
+    public ICommand LoadTeachersCommand { get; }
+    public ICommand AddTeacherCommand { get; }
+    public ICommand DeleteTeacherCommand { get; }
 
     public TeachersViewModel(IDatabaseService databaseService)
     {
         _databaseService = databaseService;
         Title = "ניהול סגל מורים";
 
-        // 💡 TODO (Student - שלב 5, ראו מדריך 05):
-        // אתחלו כאן את שלוש הפקודות באמצעות new Command(...) ו-new Command<Teacher>(...):
-        // 1. LoadTeachersCommand — תפעיל אסינכרונית את LoadTeachersAsync().
-        // 2. AddTeacherCommand — תפעיל אסינכרונית את AddTeacherAsync(), ותקבל תנאי CanExecute (CanAddTeacher) כדי שהכפתור יהיה פעיל רק כשהשדות מלאים!
-        // 3. DeleteTeacherCommand — פקודה גנרית המקבלת פרמטר מסוג Teacher ותפעיל את DeleteTeacherAsync(teacher).
+        LoadTeachersCommand = new Command(async () => await LoadTeachersAsync());
+        AddTeacherCommand = new Command(async () => await AddTeacherAsync(), CanAddTeacher);
+        DeleteTeacherCommand = new Command<Teacher>(async (teacher) => await DeleteTeacherAsync(teacher));
     }
 
     private bool CanAddTeacher()
@@ -91,27 +82,50 @@ public class TeachersViewModel : BaseViewModel
 
     public async Task LoadTeachersAsync()
     {
-        // 💡 TODO (Student - שלב 5):
-        // 1. מנעו ריצה כפולה בעזרת בדיקת IsLoading והדלקתו בתוך בלוק try / finally.
-        // 2. שלפו את כל המורים דרך _databaseService (אתחול המסד מתבצע אוטומטית בתוך השירות!).
-        // 3. נקו את אוסף Teachers והוסיפו כל מורה (טיפ: שלפו כל מורה עם includeCourses: true כדי להציג קשר 1:N!).
-        await Task.CompletedTask;
+        if (IsLoading) return;
+
+        try
+        {
+            IsLoading = true;
+            var list = await _databaseService.GetTeachersAsync();
+            Teachers.Clear();
+            foreach (var item in list)
+            {
+                // טעינת הקורסים עבור כל מורה להדגמת קשר 1:N
+                var fullTeacher = await _databaseService.GetTeacherByIdAsync(item.Id, includeCourses: true);
+                Teachers.Add(fullTeacher ?? item);
+            }
+        }
+        finally
+        {
+            IsLoading = false;
+        }
     }
 
     private async Task AddTeacherAsync()
     {
-        // 💡 TODO (Student - שלב 5):
-        // 1. בדקו את CanAddTeacher().
-        // 2. צרו אובייקט Teacher חדש מתוך שדות הטופס (NewFullName, NewEmail, NewDepartment).
-        // 3. שמרו אותו במסד באמצעות _databaseService, נקו את שדות הקלט ורעננו את הרשימה (LoadTeachersAsync).
-        await Task.CompletedTask;
+        if (!CanAddTeacher()) return;
+
+        var teacher = new Teacher
+        {
+            FullName = NewFullName.Trim(),
+            Email = NewEmail.Trim(),
+            Department = NewDepartment.Trim()
+        };
+
+        await _databaseService.SaveTeacherAsync(teacher);
+
+        NewFullName = string.Empty;
+        NewEmail = string.Empty;
+
+        await LoadTeachersAsync();
     }
 
     private async Task DeleteTeacherAsync(Teacher? teacher)
     {
-        // 💡 TODO (Student - שלב 5):
-        // 1. ודאו ש-teacher אינו null.
-        // 2. מחקו אותו דרך _databaseService ורעננו את הרשימה במסך.
-        await Task.CompletedTask;
+        if (teacher == null) return;
+
+        await _databaseService.DeleteTeacherAsync(teacher);
+        await LoadTeachersAsync();
     }
 }
