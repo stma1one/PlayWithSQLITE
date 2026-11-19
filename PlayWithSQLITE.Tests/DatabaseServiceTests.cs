@@ -56,7 +56,7 @@ public class DatabaseServiceTests : IAsyncLifetime
         Assert.False(string.IsNullOrWhiteSpace(courseWithTeacher.Teacher?.FullName));
     }
 
-    [Fact(Skip = "׳©׳׳‘ 4: ׳™׳•׳₪׳¢׳ ׳׳׳—׳¨ ׳׳™׳׳•׳© ׳—׳׳•׳§׳” ׳׳¢׳׳•׳“׳™׳ ׳¢׳ Skip ׳•-Take")]
+    [Fact]
     public async Task Pagination_SkipAndTake_ReturnsCorrectSlices()
     {
         int total = await _databaseService.GetStudentsCountAsync();
@@ -70,7 +70,7 @@ public class DatabaseServiceTests : IAsyncLifetime
         Assert.NotEqual(firstSlice[0].Id, secondSlice[0].Id);
     }
 
-    [Fact(Skip = "׳©׳׳‘ 4: ׳™׳•׳₪׳¢׳ ׳׳׳—׳¨ ׳׳™׳׳•׳© ׳©׳׳™׳׳×׳× ׳§׳™׳‘׳•׳¥ ׳•-JOIN ׳׳¡׳™׳›׳•׳ ׳¦׳™׳•׳ ׳™׳")]
+    [Fact]
     public async Task GetCourseGradeSummariesAsync_PerformsJoinAndGroupBy()
     {
         var summaries = await _databaseService.GetCourseGradeSummariesAsync();
@@ -83,7 +83,7 @@ public class DatabaseServiceTests : IAsyncLifetime
         Assert.True(csCourse.AverageGrade > 0);
     }
 
-    [Fact(Skip = "׳©׳׳‘ 4: ׳™׳•׳₪׳¢׳ ׳׳׳—׳¨ ׳׳™׳׳•׳© ׳©׳׳™׳׳×׳× ׳’׳™׳׳™׳•׳ ׳¦׳™׳•׳ ׳™׳ ׳׳¨׳•׳‘׳× ׳˜׳‘׳׳׳•׳×")]
+    [Fact]
     public async Task GetStudentTranscriptAsync_ReturnsMultiTableJoinedItems()
     {
         var students = await _databaseService.GetStudentsAsync(skip: 0, take: 1);
@@ -101,7 +101,7 @@ public class DatabaseServiceTests : IAsyncLifetime
         });
     }
 
-    [Fact(Skip = "׳©׳׳‘ 4: ׳™׳•׳₪׳¢׳ ׳׳׳—׳¨ ׳׳™׳׳•׳© ׳©׳׳™׳׳×׳× ׳—׳™׳©׳•׳‘ ׳¡׳›׳•׳ ׳ ׳§׳•׳“׳•׳× ׳–׳›׳•׳×")]
+    [Fact]
     public async Task GetTotalCreditsForStudentAsync_CalculatesSumOfCredits()
     {
         var students = await _databaseService.GetStudentsAsync(skip: 0, take: 1);
@@ -113,7 +113,7 @@ public class DatabaseServiceTests : IAsyncLifetime
         Assert.True(totalCredits > 0);
     }
 
-    [Fact(Skip = "׳©׳׳‘ 4: ׳™׳•׳₪׳¢׳ ׳׳׳—׳¨ ׳׳™׳׳•׳© ׳©׳׳™׳׳×׳× ׳§׳™׳‘׳•׳¥ ׳•׳¡׳₪׳™׳¨׳” ׳©׳ ׳×׳׳׳™׳“׳™׳ ׳׳₪׳™ ׳©׳›׳‘׳”")]
+    [Fact]
     public async Task GetStudentDistributionByGradeLevelAsync_GroupsAndCountsStudents()
     {
         var distribution = await _databaseService.GetStudentDistributionByGradeLevelAsync();

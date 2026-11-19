@@ -218,10 +218,11 @@ public class DatabaseService : IDatabaseService
     public async Task<List<Student>> GetStudentsAsync(int skip = 0, int take = 20)
     {
         await InitDBAsync();
-        // ׳‘׳©׳׳‘ 4 ׳ ׳•׳¡׳™׳£ Skip ׳•-Take ׳׳“׳₪׳“׳•׳£
         return await _database!.Table<Student>()
             .OrderBy(s => s.LastName)
             .ThenBy(s => s.FirstName)
+            .Skip(skip)
+            .Take(take)
             .ToListAsync();
     }
 
@@ -328,18 +329,83 @@ public class DatabaseService : IDatabaseService
     }
 
     // ==========================================
-    // ׳©׳׳‘ 4: ׳©׳׳™׳׳×׳•׳× ׳׳•׳¨׳›׳‘׳•׳× (׳™׳•׳©׳׳ ׳‘׳©׳׳‘ 4)
+    // ׳©׳׳‘ 4: ׳©׳׳™׳׳×׳•׳× ׳׳•׳¨׳›׳‘׳•׳×: JOIN, GROUP BY, SUM, COUNT, AVG
     // ==========================================
 
-    public async Task<List<CourseGradeSummary>> GetCourseGradeSummariesAsync() =>
-        await Task.FromResult(new List<CourseGradeSummary>());
+    public async Task<List<CourseGradeSummary>> GetCourseGradeSummariesAsync()
+    {
+        await InitDBAsync();
 
-    public async Task<List<StudentTranscriptItem>> GetStudentTranscriptAsync(int studentId) =>
-        await Task.FromResult(new List<StudentTranscriptItem>());
+        const string query = @"
+            SELECT 
+                c.Id AS CourseId,
+                c.Title AS CourseTitle,
+                IFNULL(t.FullName, '׳׳ ׳”׳•׳§׳¦׳” ׳׳•׳¨׳”') AS TeacherName,
+                COUNT(e.Id) AS StudentCount,
+                IFNULL(AVG(e.Grade), 0.0) AS AverageGrade,
+                IFNULL(MAX(e.Grade), 0.0) AS MaxGrade,
+                IFNULL(MIN(e.Grade), 0.0) AS MinGrade
+            FROM Courses c
+            LEFT JOIN Teachers t ON c.TeacherId = t.Id
+            LEFT JOIN Enrollments e ON c.Id = e.CourseId
+            GROUP BY c.Id, c.Title, t.FullName
+            ORDER BY c.Title;
+        ";
 
-    public async Task<List<GradeLevelCount>> GetStudentDistributionByGradeLevelAsync() =>
-        await Task.FromResult(new List<GradeLevelCount>());
+        return await _database!.QueryAsync<CourseGradeSummary>(query);
+    }
 
-    public async Task<int> GetTotalCreditsForStudentAsync(int studentId) =>
-        await Task.FromResult(0);
+    public async Task<List<StudentTranscriptItem>> GetStudentTranscriptAsync(int studentId)
+    {
+        await InitDBAsync();
+
+        const string query = @"
+            SELECT 
+                s.Id AS StudentId,
+                (s.FirstName || ' ' || s.LastName) AS StudentName,
+                c.Title AS CourseTitle,
+                c.Credits AS Credits,
+                IFNULL(t.FullName, '׳׳ ׳”׳•׳§׳¦׳” ׳׳•׳¨׳”') AS TeacherName,
+                e.Grade AS Grade,
+                e.IsPaid AS IsPaid
+            FROM Enrollments e
+            INNER JOIN Students s ON e.StudentId = s.Id
+            INNER JOIN Courses c ON e.CourseId = c.Id
+            LEFT JOIN Teachers t ON c.TeacherId = t.Id
+            WHERE e.StudentId = ?
+            ORDER BY c.Title;
+        ";
+
+        return await _database!.QueryAsync<StudentTranscriptItem>(query, studentId);
+    }
+
+    public async Task<List<GradeLevelCount>> GetStudentDistributionByGradeLevelAsync()
+    {
+        await InitDBAsync();
+
+        const string query = @"
+            SELECT 
+                GradeLevel,
+                COUNT(Id) AS StudentCount
+            FROM Students
+            GROUP BY GradeLevel
+            ORDER BY GradeLevel;
+        ";
+
+        return await _database!.QueryAsync<GradeLevelCount>(query);
+    }
+
+    public async Task<int> GetTotalCreditsForStudentAsync(int studentId)
+    {
+        await InitDBAsync();
+
+        const string query = @"
+            SELECT IFNULL(SUM(c.Credits), 0)
+            FROM Enrollments e
+            INNER JOIN Courses c ON e.CourseId = c.Id
+            WHERE e.StudentId = ?;
+        ";
+
+        return await _database!.ExecuteScalarAsync<int>(query, studentId);
+    }
 }
