@@ -1,4 +1,4 @@
-using PlayWithSQLITE.Models;
+﻿using PlayWithSQLITE.Models;
 using PlayWithSQLITE.Services;
 using Xunit;
 
@@ -17,7 +17,7 @@ public class DatabaseServiceTests : IAsyncLifetime
 
     public async ValueTask InitializeAsync()
     {
-        // האתחול ויצירת הטבלאות מתבצעים אוטומטית בתוך DatabaseService (InitDBAsync)
+        // ׳”׳׳×׳—׳•׳ ׳•׳™׳¦׳™׳¨׳× ׳”׳˜׳‘׳׳׳•׳× ׳׳×׳‘׳¦׳¢׳™׳ ׳׳•׳˜׳•׳׳˜׳™׳× ׳‘׳×׳•׳ DatabaseService (InitDBAsync)
         await _databaseService.SeedSampleDataAsync();
     }
 
@@ -34,17 +34,17 @@ public class DatabaseServiceTests : IAsyncLifetime
         return ValueTask.CompletedTask;
     }
 
-    [Fact(Skip = "שלב 2: יופעל לאחר מימוש GetTeachersAsync ו-SeedSampleDataAsync ב-DatabaseService")]
+    [Fact]
     public async Task GetTeachersAsync_ReturnsSeededTeachers()
     {
         var teachers = await _databaseService.GetTeachersAsync();
 
         Assert.NotNull(teachers);
         Assert.True(teachers.Count >= 3);
-        Assert.Contains(teachers, t => t.FullName == "ישראל ישראלי");
+        Assert.Contains(teachers, t => t.FullName == "׳™׳©׳¨׳׳ ׳™׳©׳¨׳׳׳™");
     }
 
-    [Fact(Skip = "שלב 3: יופעל לאחר מימוש קשרים וטעינת מורה לקורס")]
+    [Fact(Skip = "׳©׳׳‘ 3: ׳™׳•׳₪׳¢׳ ׳׳׳—׳¨ ׳׳™׳׳•׳© ׳§׳©׳¨׳™׳ ׳•׳˜׳¢׳™׳ ׳× ׳׳•׳¨׳” ׳׳§׳•׳¨׳¡")]
     public async Task GetCoursesAsync_WithRelations_LoadsTeacherDetails()
     {
         var courses = await _databaseService.GetCoursesAsync(includeRelations: true);
@@ -56,7 +56,7 @@ public class DatabaseServiceTests : IAsyncLifetime
         Assert.False(string.IsNullOrWhiteSpace(courseWithTeacher.Teacher?.FullName));
     }
 
-    [Fact(Skip = "שלב 4: יופעל לאחר מימוש חלוקה לעמודים עם Skip ו-Take")]
+    [Fact(Skip = "׳©׳׳‘ 4: ׳™׳•׳₪׳¢׳ ׳׳׳—׳¨ ׳׳™׳׳•׳© ׳—׳׳•׳§׳” ׳׳¢׳׳•׳“׳™׳ ׳¢׳ Skip ׳•-Take")]
     public async Task Pagination_SkipAndTake_ReturnsCorrectSlices()
     {
         int total = await _databaseService.GetStudentsCountAsync();
@@ -70,7 +70,7 @@ public class DatabaseServiceTests : IAsyncLifetime
         Assert.NotEqual(firstSlice[0].Id, secondSlice[0].Id);
     }
 
-    [Fact(Skip = "שלב 4: יופעל לאחר מימוש שאילתת קיבוץ ו-JOIN לסיכום ציונים")]
+    [Fact(Skip = "׳©׳׳‘ 4: ׳™׳•׳₪׳¢׳ ׳׳׳—׳¨ ׳׳™׳׳•׳© ׳©׳׳™׳׳×׳× ׳§׳™׳‘׳•׳¥ ׳•-JOIN ׳׳¡׳™׳›׳•׳ ׳¦׳™׳•׳ ׳™׳")]
     public async Task GetCourseGradeSummariesAsync_PerformsJoinAndGroupBy()
     {
         var summaries = await _databaseService.GetCourseGradeSummariesAsync();
@@ -83,7 +83,7 @@ public class DatabaseServiceTests : IAsyncLifetime
         Assert.True(csCourse.AverageGrade > 0);
     }
 
-    [Fact(Skip = "שלב 4: יופעל לאחר מימוש שאילתת גיליון ציונים מרובת טבלאות")]
+    [Fact(Skip = "׳©׳׳‘ 4: ׳™׳•׳₪׳¢׳ ׳׳׳—׳¨ ׳׳™׳׳•׳© ׳©׳׳™׳׳×׳× ׳’׳™׳׳™׳•׳ ׳¦׳™׳•׳ ׳™׳ ׳׳¨׳•׳‘׳× ׳˜׳‘׳׳׳•׳×")]
     public async Task GetStudentTranscriptAsync_ReturnsMultiTableJoinedItems()
     {
         var students = await _databaseService.GetStudentsAsync(skip: 0, take: 1);
@@ -101,7 +101,7 @@ public class DatabaseServiceTests : IAsyncLifetime
         });
     }
 
-    [Fact(Skip = "שלב 4: יופעל לאחר מימוש שאילתת חישוב סכום נקודות זכות")]
+    [Fact(Skip = "׳©׳׳‘ 4: ׳™׳•׳₪׳¢׳ ׳׳׳—׳¨ ׳׳™׳׳•׳© ׳©׳׳™׳׳×׳× ׳—׳™׳©׳•׳‘ ׳¡׳›׳•׳ ׳ ׳§׳•׳“׳•׳× ׳–׳›׳•׳×")]
     public async Task GetTotalCreditsForStudentAsync_CalculatesSumOfCredits()
     {
         var students = await _databaseService.GetStudentsAsync(skip: 0, take: 1);
@@ -113,7 +113,7 @@ public class DatabaseServiceTests : IAsyncLifetime
         Assert.True(totalCredits > 0);
     }
 
-    [Fact(Skip = "שלב 4: יופעל לאחר מימוש שאילתת קיבוץ וספירה של תלמידים לפי שכבה")]
+    [Fact(Skip = "׳©׳׳‘ 4: ׳™׳•׳₪׳¢׳ ׳׳׳—׳¨ ׳׳™׳׳•׳© ׳©׳׳™׳׳×׳× ׳§׳™׳‘׳•׳¥ ׳•׳¡׳₪׳™׳¨׳” ׳©׳ ׳×׳׳׳™׳“׳™׳ ׳׳₪׳™ ׳©׳›׳‘׳”")]
     public async Task GetStudentDistributionByGradeLevelAsync_GroupsAndCountsStudents()
     {
         var distribution = await _databaseService.GetStudentDistributionByGradeLevelAsync();
@@ -123,16 +123,16 @@ public class DatabaseServiceTests : IAsyncLifetime
         Assert.All(distribution, d => Assert.True(d.StudentCount > 0));
     }
 
-    [Fact(Skip = "שלב 3: יופעל לאחר מימוש פעולות טבלת הגישור (EnrollStudentAsync ו-GetEnrollmentsAsync)")]
+    [Fact(Skip = "׳©׳׳‘ 3: ׳™׳•׳₪׳¢׳ ׳׳׳—׳¨ ׳׳™׳׳•׳© ׳₪׳¢׳•׳׳•׳× ׳˜׳‘׳׳× ׳”׳’׳™׳©׳•׳¨ (EnrollStudentAsync ׳•-GetEnrollmentsAsync)")]
     public async Task EnrollStudentAsync_CreatesNewEnrollment()
     {
-        var teacher = new Teacher { FullName = "מורה בדיקה", Email = "test@teacher.org", Department = "בדיקות" };
+        var teacher = new Teacher { FullName = "׳׳•׳¨׳” ׳‘׳“׳™׳§׳”", Email = "test@teacher.org", Department = "׳‘׳“׳™׳§׳•׳×" };
         await _databaseService.SaveTeacherAsync(teacher);
 
-        var course = new Course { Title = "קורס בדיקה", Credits = 2, TeacherId = teacher.Id };
+        var course = new Course { Title = "׳§׳•׳¨׳¡ ׳‘׳“׳™׳§׳”", Credits = 2, TeacherId = teacher.Id };
         await _databaseService.SaveCourseAsync(course);
 
-        var student = new Student { FirstName = "דני", LastName = "בדיקה", Email = "dani_test@school.org", GradeLevel = 10 };
+        var student = new Student { FirstName = "׳“׳ ׳™", LastName = "׳‘׳“׳™׳§׳”", Email = "dani_test@school.org", GradeLevel = 10 };
         await _databaseService.SaveStudentAsync(student);
 
         int result = await _databaseService.EnrollStudentAsync(student.Id, course.Id, grade: 99.0);
