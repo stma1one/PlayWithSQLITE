@@ -44,7 +44,7 @@ public class DatabaseServiceTests : IAsyncLifetime
         Assert.Contains(teachers, t => t.FullName == "׳™׳©׳¨׳׳ ׳™׳©׳¨׳׳׳™");
     }
 
-    [Fact(Skip = "׳©׳׳‘ 3: ׳™׳•׳₪׳¢׳ ׳׳׳—׳¨ ׳׳™׳׳•׳© ׳§׳©׳¨׳™׳ ׳•׳˜׳¢׳™׳ ׳× ׳׳•׳¨׳” ׳׳§׳•׳¨׳¡")]
+    [Fact]
     public async Task GetCoursesAsync_WithRelations_LoadsTeacherDetails()
     {
         var courses = await _databaseService.GetCoursesAsync(includeRelations: true);
@@ -123,7 +123,7 @@ public class DatabaseServiceTests : IAsyncLifetime
         Assert.All(distribution, d => Assert.True(d.StudentCount > 0));
     }
 
-    [Fact(Skip = "׳©׳׳‘ 3: ׳™׳•׳₪׳¢׳ ׳׳׳—׳¨ ׳׳™׳׳•׳© ׳₪׳¢׳•׳׳•׳× ׳˜׳‘׳׳× ׳”׳’׳™׳©׳•׳¨ (EnrollStudentAsync ׳•-GetEnrollmentsAsync)")]
+    [Fact]
     public async Task EnrollStudentAsync_CreatesNewEnrollment()
     {
         var teacher = new Teacher { FullName = "׳׳•׳¨׳” ׳‘׳“׳™׳§׳”", Email = "test@teacher.org", Department = "׳‘׳“׳™׳§׳•׳×" };

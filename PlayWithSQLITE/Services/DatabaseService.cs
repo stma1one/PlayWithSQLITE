@@ -1,6 +1,7 @@
 ﻿using PlayWithSQLITE.Models;
 using PlayWithSQLITE.Models.DTOs;
 using SQLite;
+using SQLiteNetExtensionsAsync.Extensions;
 
 namespace PlayWithSQLITE.Services;
 
@@ -14,7 +15,6 @@ public class DatabaseService : IDatabaseService
         _dbPath = Constants.DatabasePath;
     }
 
-    // ׳‘׳ ׳׳™ ׳ ׳•׳¡׳£ ׳׳”׳–׳¨׳§׳× ׳ ׳×׳™׳‘ ׳׳•׳×׳׳ ג€” ׳׳©׳׳© ׳׳× ׳‘׳“׳™׳§׳•׳× ׳”׳™׳—׳™׳“׳” (xUnit v3)
     public DatabaseService(string dbPath)
     {
         _dbPath = dbPath;
@@ -40,7 +40,6 @@ public class DatabaseService : IDatabaseService
     public async Task ClearAllDataAsync()
     {
         await InitDBAsync();
-        // ׳׳—׳™׳§׳” ׳‘׳¡׳“׳¨ ׳”׳׳›׳‘׳“ ׳×׳׳•׳™׳•׳× ׳•׳׳₪׳×׳—׳•׳× ׳–׳¨׳™׳ (׳™׳׳“׳™׳ ׳׳₪׳ ׳™ ׳”׳•׳¨׳™׳)
         await _database!.DeleteAllAsync<Enrollment>();
         await _database.DeleteAllAsync<Course>();
         await _database.DeleteAllAsync<Student>();
@@ -55,7 +54,6 @@ public class DatabaseService : IDatabaseService
         if (teacherCount > 0)
             return;
 
-        // 1. ׳”׳•׳¡׳₪׳× ׳׳•׳¨׳™׳
         var teacher1 = new Teacher { FullName = "׳™׳©׳¨׳׳ ׳™׳©׳¨׳׳׳™", Email = "israel@school.org", Department = "׳׳“׳¢׳™ ׳”׳׳—׳©׳‘" };
         var teacher2 = new Teacher { FullName = "׳©׳¨׳” ׳׳•׳™", Email = "sara@school.org", Department = "׳׳×׳׳˜׳™׳§׳”" };
         var teacher3 = new Teacher { FullName = "׳“׳•׳“ ׳›׳”׳", Email = "david@school.org", Department = "׳₪׳™׳–׳™׳§׳”" };
@@ -64,7 +62,6 @@ public class DatabaseService : IDatabaseService
         await _database.InsertAsync(teacher2);
         await _database.InsertAsync(teacher3);
 
-        // 2. ׳”׳•׳¡׳₪׳× ׳§׳•׳¨׳¡׳™׳ ׳¢׳ ׳׳₪׳×׳—׳•׳× ׳–׳¨׳™׳ ׳׳׳•׳¨׳™׳
         var course1 = new Course { Title = "׳×׳›׳ ׳•׳× ׳‘-C# ׳•-MAUI", Credits = 5, Description = "׳₪׳™׳×׳•׳— ׳׳₪׳׳™׳§׳¦׳™׳•׳× ׳׳•׳‘׳™׳™׳ ׳—׳•׳¦׳•׳×-׳₪׳׳˜׳₪׳•׳¨׳׳•׳×", TeacherId = teacher1.Id };
         var course2 = new Course { Title = "׳׳‘׳ ׳™ ׳ ׳×׳•׳ ׳™׳ ׳•׳׳׳’׳•׳¨׳™׳×׳׳™׳", Credits = 4, Description = "׳™׳¡׳•׳“׳•׳× ׳×׳™׳׳•׳¨׳˜׳™׳™׳ ׳•׳׳¢׳©׳™׳™׳", TeacherId = teacher1.Id };
         var course3 = new Course { Title = "׳—׳“׳•\"׳ ׳׳×׳׳׳™׳“׳™ ׳׳“׳¢׳™ ׳”׳׳—׳©׳‘", Credits = 4, Description = "׳—׳©׳‘׳•׳ ׳׳™׳ ׳₪׳™׳ ׳™׳˜׳¡׳™׳׳׳™", TeacherId = teacher2.Id };
@@ -75,7 +72,6 @@ public class DatabaseService : IDatabaseService
         await _database.InsertAsync(course3);
         await _database.InsertAsync(course4);
 
-        // 3. ׳”׳•׳¡׳₪׳× ׳×׳׳׳™׳“׳™׳
         var students = new List<Student>
         {
             new() { FirstName = "׳ ׳•׳¢׳", LastName = "׳׳‘׳¨׳”׳", Email = "noam@students.org", GradeLevel = 11, BirthDate = new DateTime(2009, 3, 15) },
@@ -91,7 +87,6 @@ public class DatabaseService : IDatabaseService
             await _database.InsertAsync(s);
         }
 
-        // 4. ׳¨׳™׳©׳•׳ ׳×׳׳׳™׳“׳™׳ ׳׳§׳•׳¨׳¡׳™׳ (׳˜׳‘׳׳× ׳’׳™׳©׳•׳¨ Enrollment)
         var enrollments = new List<Enrollment>
         {
             new() { StudentId = students[0].Id, CourseId = course1.Id, Grade = 95, IsPaid = true },
@@ -113,7 +108,7 @@ public class DatabaseService : IDatabaseService
     }
 
     // ==========================================
-    // ׳©׳׳‘ 2: CRUD ׳‘׳¡׳™׳¡׳™ ג€” ׳׳•׳¨׳™׳ (Teachers)
+    // CRUD ׳•׳§׳©׳¨׳™׳ ג€” ׳׳•׳¨׳™׳ (Teachers ג€” 1:N)
     // ==========================================
 
     public async Task<List<Teacher>> GetTeachersAsync()
@@ -125,7 +120,18 @@ public class DatabaseService : IDatabaseService
     public async Task<Teacher?> GetTeacherByIdAsync(int id, bool includeCourses = false)
     {
         await InitDBAsync();
-        // ׳‘׳©׳׳‘ 3 ׳ ׳©׳“׳¨׳’ ׳׳˜׳¢׳™׳ ׳× ׳§׳•׳¨׳¡׳™׳ ׳›׳׳©׳¨ includeCourses == true
+        if (includeCourses)
+        {
+            try
+            {
+                return await _database!.GetWithChildrenAsync<Teacher>(id);
+            }
+            catch (InvalidOperationException)
+            {
+                return null;
+            }
+        }
+
         return await _database!.Table<Teacher>().FirstOrDefaultAsync(t => t.Id == id);
     }
 
@@ -140,23 +146,47 @@ public class DatabaseService : IDatabaseService
     public async Task<int> DeleteTeacherAsync(Teacher teacher)
     {
         await InitDBAsync();
-        return await _database!.DeleteAsync(teacher);
+        // ׳׳ ׳™׳¢׳× ׳¨׳©׳•׳׳•׳× ׳™׳×׳•׳׳•׳×: ׳׳—׳™׳§׳× ׳”׳§׳•׳¨׳¡׳™׳ ׳©׳ ׳”׳׳•׳¨׳” (׳•׳”׳¨׳™׳©׳•׳׳™׳ ׳©׳׳”׳) ׳׳₪׳ ׳™ ׳׳—׳™׳§׳× ׳”׳׳•׳¨׳”
+        var courses = await _database!.Table<Course>().Where(c => c.TeacherId == teacher.Id).ToListAsync();
+        foreach (var course in courses)
+        {
+            await DeleteCourseAsync(course);
+        }
+
+        return await _database.DeleteAsync(teacher);
     }
 
     // ==========================================
-    // ׳©׳׳‘ 2: CRUD ׳‘׳¡׳™׳¡׳™ ג€” ׳§׳•׳¨׳¡׳™׳ (Courses)
+    // CRUD ׳•׳§׳©׳¨׳™׳ ג€” ׳§׳•׳¨׳¡׳™׳ (Courses ג€” N:1 + M:N)
     // ==========================================
 
     public async Task<List<Course>> GetCoursesAsync(bool includeRelations = false)
     {
         await InitDBAsync();
-        // ׳‘׳©׳׳‘ 3 ׳ ׳©׳“׳¨׳’ ׳׳˜׳¢׳™׳ ׳× ׳§׳©׳¨׳™׳ ׳›׳׳©׳¨ includeRelations == true
+        if (includeRelations)
+        {
+            var courses = await _database!.GetAllWithChildrenAsync<Course>();
+            return courses.OrderBy(c => c.Title).ToList();
+        }
+
         return await _database!.Table<Course>().OrderBy(c => c.Title).ToListAsync();
     }
 
     public async Task<Course?> GetCourseByIdAsync(int id, bool includeRelations = true)
     {
         await InitDBAsync();
+        if (includeRelations)
+        {
+            try
+            {
+                return await _database!.GetWithChildrenAsync<Course>(id);
+            }
+            catch (InvalidOperationException)
+            {
+                return null;
+            }
+        }
+
         return await _database!.Table<Course>().FirstOrDefaultAsync(c => c.Id == id);
     }
 
@@ -171,17 +201,24 @@ public class DatabaseService : IDatabaseService
     public async Task<int> DeleteCourseAsync(Course course)
     {
         await InitDBAsync();
-        return await _database!.DeleteAsync(course);
+        // ׳׳—׳™׳§׳× ׳¨׳™׳©׳•׳׳™ ׳”׳§׳•׳¨׳¡ ׳‘׳׳‘׳“ ג€” ׳׳‘׳׳™ ׳׳׳—׳•׳§ ׳׳× ׳”׳×׳׳׳™׳“׳™׳ ׳¢׳¦׳׳!
+        var enrollments = await _database!.Table<Enrollment>().Where(e => e.CourseId == course.Id).ToListAsync();
+        foreach (var enrollment in enrollments)
+        {
+            await _database.DeleteAsync(enrollment);
+        }
+
+        return await _database.DeleteAsync(course);
     }
 
     // ==========================================
-    // ׳©׳׳‘ 2: CRUD ׳‘׳¡׳™׳¡׳™ ג€” ׳×׳׳׳™׳“׳™׳ (Students)
+    // CRUD ׳•׳§׳©׳¨׳™׳ ג€” ׳×׳׳׳™׳“׳™׳ (Students ג€” M:N)
     // ==========================================
 
     public async Task<List<Student>> GetStudentsAsync(int skip = 0, int take = 20)
     {
         await InitDBAsync();
-        // ׳‘׳©׳׳‘ 4 ׳ ׳•׳¡׳™׳£ Skip(skip) ׳•-Take(take) ׳׳“׳₪׳“׳•׳£
+        // ׳‘׳©׳׳‘ 4 ׳ ׳•׳¡׳™׳£ Skip ׳•-Take ׳׳“׳₪׳“׳•׳£
         return await _database!.Table<Student>()
             .OrderBy(s => s.LastName)
             .ThenBy(s => s.FirstName)
@@ -197,6 +234,18 @@ public class DatabaseService : IDatabaseService
     public async Task<Student?> GetStudentByIdAsync(int id, bool includeCourses = false)
     {
         await InitDBAsync();
+        if (includeCourses)
+        {
+            try
+            {
+                return await _database!.GetWithChildrenAsync<Student>(id);
+            }
+            catch (InvalidOperationException)
+            {
+                return null;
+            }
+        }
+
         return await _database!.Table<Student>().FirstOrDefaultAsync(s => s.Id == id);
     }
 
@@ -211,24 +260,72 @@ public class DatabaseService : IDatabaseService
     public async Task<int> DeleteStudentAsync(Student student)
     {
         await InitDBAsync();
-        return await _database!.DeleteAsync(student);
+        var enrollments = await _database!.Table<Enrollment>().Where(e => e.StudentId == student.Id).ToListAsync();
+        foreach (var enrollment in enrollments)
+        {
+            await _database.DeleteAsync(enrollment);
+        }
+
+        return await _database.DeleteAsync(student);
     }
 
     // ==========================================
-    // ׳©׳׳‘ 3: ׳§׳©׳¨׳™ ׳’׳•׳׳׳™׳ ׳•׳¨׳™׳©׳•׳׳™׳ (׳™׳•׳©׳׳ ׳‘׳©׳׳‘ 3)
+    // ׳©׳׳‘ 3: ׳§׳©׳¨׳™ ׳’׳•׳׳׳™׳ ׳•׳¨׳™׳©׳•׳׳™׳ (Enrollments ג€” ׳˜׳‘׳׳× ׳’׳™׳©׳•׳¨ M:N)
     // ==========================================
 
-    public async Task<List<Enrollment>> GetEnrollmentsAsync() =>
-        await Task.FromResult(new List<Enrollment>());
+    public async Task<List<Enrollment>> GetEnrollmentsAsync()
+    {
+        await InitDBAsync();
+        return await _database!.GetAllWithChildrenAsync<Enrollment>();
+    }
 
-    public async Task<int> EnrollStudentAsync(int studentId, int courseId, double? grade = null) =>
-        await Task.FromResult(0);
+    public async Task<int> EnrollStudentAsync(int studentId, int courseId, double? grade = null)
+    {
+        await InitDBAsync();
+        var existing = await _database!.Table<Enrollment>()
+            .FirstOrDefaultAsync(e => e.StudentId == studentId && e.CourseId == courseId);
 
-    public async Task<int> UpdateEnrollmentGradeAsync(int enrollmentId, double grade) =>
-        await Task.FromResult(0);
+        if (existing != null)
+        {
+            existing.Grade = grade;
+            return await _database.UpdateAsync(existing);
+        }
 
-    public async Task<int> RemoveEnrollmentAsync(int studentId, int courseId) =>
-        await Task.FromResult(0);
+        var enrollment = new Enrollment
+        {
+            StudentId = studentId,
+            CourseId = courseId,
+            Grade = grade,
+            EnrollmentDate = DateTime.Now,
+            IsPaid = true
+        };
+        return await _database.InsertAsync(enrollment);
+    }
+
+    public async Task<int> UpdateEnrollmentGradeAsync(int enrollmentId, double grade)
+    {
+        await InitDBAsync();
+        var enrollment = await _database!.Table<Enrollment>().FirstOrDefaultAsync(e => e.Id == enrollmentId);
+        if (enrollment == null)
+            return 0;
+
+        enrollment.Grade = grade;
+        return await _database.UpdateAsync(enrollment);
+    }
+
+    public async Task<int> RemoveEnrollmentAsync(int studentId, int courseId)
+    {
+        await InitDBAsync();
+        var existing = await _database!.Table<Enrollment>()
+            .FirstOrDefaultAsync(e => e.StudentId == studentId && e.CourseId == courseId);
+
+        if (existing != null)
+        {
+            return await _database.DeleteAsync(existing);
+        }
+
+        return 0;
+    }
 
     // ==========================================
     // ׳©׳׳‘ 4: ׳©׳׳™׳׳×׳•׳× ׳׳•׳¨׳›׳‘׳•׳× (׳™׳•׳©׳׳ ׳‘׳©׳׳‘ 4)
