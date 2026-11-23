@@ -1,20 +1,20 @@
+using SQLite;
+using SQLiteNetExtensions.Attributes;
+
 namespace PlayWithSQLITE.Models;
 
-// 💡 שלב 1 (ראו מדריך 01 ותרשים ERD):
-// - אילו מרחבי שמות (using directives) יש לייבא?
-// - מחלקה זו היא טבלת הגישור (Junction Table) השוברת את קשר ה-M:N בין Students ל-Courses.
-//   כיצד ממפים אותה לטבלה בשם "Enrollments"?
+[Table("Enrollments")]
 public class Enrollment
 {
-    // 💡 מפתח ראשי ומספור אוטומטי של רשומת הרישום:
+    [PrimaryKey, AutoIncrement]
     public int Id { get; set; }
 
-    // 💡 מפתח זר ראשון (Foreign Key):
-    // מצביע לטבלת התלמידים. איזה מאפיין מסמן אותו כמפתח זר ולאיזה טיפוס ישות?
+    // מפתח זר לתלמיד (צד ה-N בקשר מול Students)
+    [ForeignKey(typeof(Student))]
     public int StudentId { get; set; }
 
-    // 💡 מפתח זר שני (Foreign Key):
-    // מצביע לטבלת הקורסים. איזה מאפיין מסמן אותו כמפתח זר ולאיזה טיפוס ישות?
+    // מפתח זר לקורס (צד ה-N בקשר מול Courses)
+    [ForeignKey(typeof(Course))]
     public int CourseId { get; set; }
 
     public DateTime EnrollmentDate { get; set; } = DateTime.Now;
@@ -22,12 +22,13 @@ public class Enrollment
     // ציון בקורס (0-100) — nullable כל עוד טרם הוזן ציון סופי
     public double? Grade { get; set; }
 
-    // האם שולמו דמי הרישום לקורס
+    // האם שולמו דמי הרישום
     public bool IsPaid { get; set; } = true;
 
-    // 💡 מאפייני ניווט בצד ה-N של שני הקשרים (רבים-ליחיד):
-    // כל רשומת רישום שייכת לתלמיד אחד ולקורס אחד.
-    // איזה מאפיין של SQLiteNetExtensions מגדירים מעל כל אחד משני המאפיינים הבאים?
+    // מאפייני ניווט בצד ה-N לשתי ישויות ההורה
+    [ManyToOne]
     public Student? Student { get; set; }
+
+    [ManyToOne]
     public Course? Course { get; set; }
 }

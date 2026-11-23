@@ -1,34 +1,35 @@
+using SQLite;
+using SQLiteNetExtensions.Attributes;
+
 namespace PlayWithSQLITE.Models;
 
-// 💡 שלב 1 (ראו מדריך 01 ותרשים ERD):
-// - אילו מרחבי שמות (using directives) דרושים כאן?
-// - כיצד מגדירים שמחלקה זו תמופה לטבלה בשם "Courses"?
+[Table("Courses")]
 public class Course
 {
-    // 💡 מפתח ראשי עם מספור אוטומטי: אילו שני מאפיינים נדרשים?
+    [PrimaryKey, AutoIncrement]
     public int Id { get; set; }
 
-    // 💡 שדה חובה באורך מקסימלי של 100 תווים: אילו מאפיינים מגנים על תקינות הכותרת?
+    [NotNull, MaxLength(100)]
     public string Title { get; set; } = string.Empty;
 
     public int Credits { get; set; } = 3;
 
-    // 💡 הגבלת אורך: כיצד מגבילים את התיאור לעד 200 תווים?
+    [MaxLength(200)]
     public string Description { get; set; } = string.Empty;
 
-    // 💡 קשר 1:N — טבלת Courses היא צד ה-N בקשר מול המורה!
-    // איזה מאפיין מסמן עמודה זו כמפתח זר (Foreign Key), ולאיזה טיפוס ישות עליו להצביע?
+    // קשר 1:N (צד ה-N / ילד) — המפתח הזר יושב תמיד בצד ה-N!
+    [ForeignKey(typeof(Teacher))]
     public int TeacherId { get; set; }
 
-    // 💡 מאפיין ניווט בצד ה-N (רבים-ליחיד):
-    // איזה מאפיין של SQLiteNetExtensions מאפשר לטעון את אובייקט המורה המלא כאשר שולפים קורס?
+    // מאפיין ניווט להורה (רבים-ליחיד)
+    [ManyToOne]
     public Teacher? Teacher { get; set; }
 
-    // 💡 קשר M:N (רבים-לרבים) מול תלמידים:
-    // איזה מאפיין מגדיר קשר רבים-לרבים, איזו טבלת גישור (Junction Table) מציינים בו,
-    // ואיזה CascadeOperation תבחרו כאן (שימו לב: מה יקרה אם נמחק קורס עם CascadeDelete)?
-    public List<Student> Students { get; set; } = [];//[] כמו new List<Student>();
+    // קשר M:N מול תלמידים דרך טבלת הגישור Enrollment (ללא CascadeDelete כדי לא למחוק תלמידים!)
+    [ManyToMany(typeof(Enrollment), CascadeOperations = CascadeOperation.CascadeRead | CascadeOperation.CascadeInsert)]
+    public List<Student> Students { get; set; } = new();
 
-	// 💡 מאפיין מחושב לתצוגה ב-XAML — זכרו לסמן אותו כך שלא יישמר כעמודה בטבלה!
-	public string TeacherName => Teacher?.FullName ?? $"מורה מזהה #{TeacherId}";
+    // שדה מחושב לתצוגה ב-XAML בלבד
+    [Ignore]
+    public string TeacherName => Teacher?.FullName ?? $"מורה מזהה #{TeacherId}";
 }
