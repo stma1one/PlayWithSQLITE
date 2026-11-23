@@ -13,11 +13,16 @@ import re
 import base64
 import shutil
 from pathlib import Path
+from urllib.parse import quote, unquote, urlparse, parse_qs
 from markdown_it import MarkdownIt
 from pygments import highlight
 from pygments.lexers import get_lexer_by_name, TextLexer
 from pygments.formatters import HtmlFormatter
 from playwright.sync_api import sync_playwright
+from pypdf import PdfReader, PdfWriter
+from pypdf.generic import ArrayObject, BooleanObject, DictionaryObject, NameObject, NumberObject, TextStringObject
+
+REL_PDF_SENTINEL = "https://rel-pdf.local/?p="
 
 # Ensure UTF-8 output on Windows consoles
 if sys.platform == "win32":
@@ -442,6 +447,72 @@ def build_html_document(title: str, body_html: str, subtitle: str = "") -> str:
 </html>"""
 
 
+def encode_relative_pdf_links(html_text: str) -> str:
+    """Rewrites relative .pdf hrefs into a sentinel URL so Chromium does not convert them into machine-specific file:/// paths."""
+    def replace_href(match):
+        prefix, href, suffix = match.group(1), match.group(2), match.group(3)
+        low = href.lower().strip()
+        if low.startswith(("http://", "https://", "mailto:", "#", "data:")):
+            return match.group(0)
+        if ".pdf" not in low:
+            return match.group(0)
+        rel = href.strip().replace("\\", "/")
+        while rel.startswith("./"):
+            rel = rel[2:]
+        return f'{prefix}{REL_PDF_SENTINEL}{quote(rel, safe="")}{suffix}'
+
+    return re.sub(r'(<a\s+[^>]*href=")([^"]+)(")', replace_href, html_text, flags=re.IGNORECASE)
+
+
+def rewrite_pdf_relative_links(pdf_path: Path) -> int:
+    """Converts sentinel URIs inside a generated PDF into ISO 32000-1 relative /GoToR actions."""
+    reader = PdfReader(str(pdf_path))
+    writer = PdfWriter()
+    writer.append(reader)
+
+    converted = 0
+    for page in writer.pages:
+        annots = page.get("/Annots")
+        if not annots:
+            continue
+        for annot_ref in annots:
+            annot = annot_ref.get_object()
+            action = annot.get("/A")
+            if not action:
+                continue
+            action_obj = action.get_object()
+            if action_obj.get("/S") != "/URI":
+                continue
+            uri = str(action_obj.get("/URI", ""))
+            if uri.startswith(REL_PDF_SENTINEL):
+                parsed = urlparse(uri)
+                rel_path = unquote(parse_qs(parsed.query).get("p", [""])[0])
+                if not rel_path:
+                    continue
+                filespec = DictionaryObject({
+                    NameObject("/Type"): NameObject("/Filespec"),
+                    NameObject("/F"): TextStringObject(rel_path),
+                    NameObject("/UF"): TextStringObject(rel_path),
+                })
+                annot[NameObject("/A")] = DictionaryObject({
+                    NameObject("/Type"): NameObject("/Action"),
+                    NameObject("/S"): NameObject("/GoToR"),
+                    NameObject("/F"): filespec,
+                    NameObject("/D"): ArrayObject([NumberObject(0), NameObject("/Fit")]),
+                    NameObject("/NewWindow"): BooleanObject(True),
+                })
+                converted += 1
+            elif uri.lower().startswith("file:///"):
+                print(f"  [WARN] Machine-specific file:/// URI detected in {pdf_path.name}: {uri}")
+
+    if converted > 0:
+        tmp_out = pdf_path.with_suffix(".relfixed.pdf")
+        with open(tmp_out, "wb") as f:
+            writer.write(f)
+        shutil.move(str(tmp_out), str(pdf_path))
+    return converted
+
+
 def convert_markdown_to_pdf(page, md_file: Path, output_pdf: Path, learning_dir: Path):
     output_pdf.parent.mkdir(parents=True, exist_ok=True)
     md_text = md_file.read_text(encoding="utf-8", errors="ignore")
@@ -452,6 +523,7 @@ def convert_markdown_to_pdf(page, md_file: Path, output_pdf: Path, learning_dir:
     html_body = md.render(md_text)
     html_body = transform_callouts(html_body)
     html_body = embed_images(html_body, md_file.parent, learning_dir)
+    html_body = encode_relative_pdf_links(html_body)
 
     full_html = build_html_document(title=title, body_html=html_body)
 
@@ -466,7 +538,9 @@ def convert_markdown_to_pdf(page, md_file: Path, output_pdf: Path, learning_dir:
             print_background=True,
             margin={"top": "14mm", "bottom": "14mm", "left": "12mm", "right": "12mm"}
         )
-        print(f"  [MD -> PDF] {output_pdf.name} ({output_pdf.stat().st_size / 1024:.1f} KB)")
+        rel_count = rewrite_pdf_relative_links(output_pdf)
+        rel_note = f", {rel_count} relative PDF links" if rel_count else ""
+        print(f"  [MD -> PDF] {output_pdf.name} ({output_pdf.stat().st_size / 1024:.1f} KB{rel_note})")
     except PermissionError:
         print(f"  [LOCKED] {output_pdf.name} is currently open in another program (e.g. PDF reader) - skipped overwrite.")
     finally:

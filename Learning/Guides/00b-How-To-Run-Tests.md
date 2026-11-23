@@ -148,3 +148,97 @@ dotnet test PlayWithSQLITE.Tests\PlayWithSQLITE.Tests.csproj
    - `Assert.Equal() Failure: Expected: 3, Actual: 6` ➡️ למשל ב-`Pagination`, חזרו כל 6 התלמידים במקום 3 (שכחתם `.Take(take)`!).
    - `SQLiteException: no such table: Courses` ➡️ שכחתם לקרוא ל-`CreateTableAsync<Course>()` בתוך `InitDBAsync()`.
 2. **`Stack Trace` (עקבות הקריאה):** מציג את **שם הקובץ ומספר השורה המדויק** שבה הבדיקה נכשלה (למשל `DatabaseService.cs:line 84`). לחיצה על השורה ב-Visual Studio / Rider תקפיץ אתכם ישירות אל השורה הבעייתית!
+
+---
+
+## 6. נספח: מדריך שלב-אחר-שלב — איך מוסיפים בדיקת יחידה חדשה?
+
+בהמשך הפרויקט (וגם בפרויקט הבגרות שלכם!) תרצו להוסיף **בדיקות חדשות משלכם** כדי לוודא שפעולות נוספות שכתבתם עובדות ללא באגים. כך עושים זאת ב-6 שלבים ברורים:
+
+### שלב 1: מגדירים מה בודקים ומה התוצאה הצפויה
+לפני שכותבים שורת קוד אחת, מנסחים במשפט אחד:
+- **איזו פעולה נבדקת?** לדוגמה: `SaveTeacherAsync` + `GetTeacherByIdAsync` (או `UpdateEnrollmentGradeAsync`).
+- **מה הקלט (המצב ההתחלתי)?** לדוגמה: מורה חדש בשם `"נועה לוי"` עם התמחות `"פיזיקה"`.
+- **מה חייב לקרות בסוף?** שהמורה נשמר בהצלחה (`rows > 0`), מקבל `Id > 0`, ונשלף בחזרה עם אותם הפרטים בדיוק.
+
+### שלב 2: פותחים את הקובץ המתאים ב-`PlayWithSQLITE.Tests`
+- אם אתם בודקים פעולה של `DatabaseService`: פתחו את `PlayWithSQLITE.Tests/DatabaseServiceTests.cs` והוסיפו את הבדיקה בתוך המחלקה `DatabaseServiceTests` (כך תקבלו אוטומטית את `_databaseService` המחובר לקובץ `.db3` זמני ונקי בזכות `IAsyncLifetime`!).
+- אם אתם יוצרים קובץ בדיקות חדש עבור מחלקה אחרת (למשל ViewModel או Converter):
+  1. קליק ימני על פרויקט `PlayWithSQLITE.Tests` ➡️ **`Add`** ➡️ **`Class...`**
+  2. תנו שם שמסתיים ב-`Tests`, למשל `TeachersViewModelTests.cs`.
+  3. ודאו שהמחלקה מוגדרת כ-**`public class`** (אחרת xUnit לא יזהה אותה!).
+
+### שלב 3: בוחרים שם ברור למתודת הבדיקה
+מוסכמת השמות המקובלת בתעשייה היא **`MethodName_Scenario_ExpectedResult`**:
+
+| ❌ שם לא ברור | ✅ שם מקצועי וברור |
+| :--- | :--- |
+| `Test1` | `SaveTeacherAsync_NewTeacher_PersistsAndCanBeFetchedById` |
+| `CheckGrade` | `UpdateEnrollmentGradeAsync_ExistingEnrollment_UpdatesGrade` |
+| `DeleteTest` | `DeleteStudentAsync_ExistingStudent_RemovesStudentAndEnrollments` |
+
+### שלב 4: כותבים את הבדיקה עם `[Fact]` לפי תבנית AAA
+הוסיפו מתודה **`public`** שמסומנת ב-`[Fact]`:
+- אם הפעולה שאתם בודקים היא אסינכרונית (`await ...`) — טיפוס ההחזרה יהיה **`public async Task`**.
+- אם הפעולה היא סינכרונית רגילה (למשל Converter) — טיפוס ההחזרה יהיה **`public void`**.
+
+**דוגמה מלאה שאפשר להוסיף ל-`DatabaseServiceTests.cs`:**
+```csharp
+[Fact]
+public async Task SaveTeacherAsync_NewTeacher_PersistsAndCanBeFetchedById()
+{
+    // 1. Arrange (הכנה): יוצרים אובייקט מורה חדש לבדיקה
+    var newTeacher = new Teacher
+    {
+        FullName = "נועה לוי",
+        Email = "noa.levi@school.edu",
+        Specialty = "פיזיקה"
+    };
+
+    // 2. Act (הפעלה): שומרים אותו במסד ואז שולפים אותו בחזרה לפי המזהה שנוצר
+    int affectedRows = await _databaseService.SaveTeacherAsync(newTeacher);
+    var savedTeacher = await _databaseService.GetTeacherByIdAsync(newTeacher.Id, includeCourses: false);
+
+    // 3. Assert (אימות): מוודאים שכל התנאים מתקיימים!
+    Assert.Equal(1, affectedRows);                     // נשמרה בדיוק שורה אחת
+    Assert.True(newTeacher.Id > 0);                    // SQLite הקצה מפתח ראשי אוטומטי
+    Assert.NotNull(savedTeacher);                      // המורה נמצא בשליפה מהמסד
+    Assert.Equal("נועה לוי", savedTeacher.FullName);   // השם נשמר במדויק
+    Assert.Equal("פיזיקה", savedTeacher.Specialty);    // ההתמחות נשמרה במדויק
+}
+```
+
+> [!TIP]
+> **בונוס — רוצים לבדוק את אותה לוגיקה על כמה קלטים שונים? השתמשו ב-`[Theory]`!**  
+> במקום להעתיק-להדביק את אותה בדיקה 3 פעמים עם ציונים שונים, מחליפים את `[Fact]` ב-`[Theory]` ומוסיפים שורות `[InlineData(...)]`:
+> ```csharp
+> [Theory]
+> [InlineData(60.0)]
+> [InlineData(85.5)]
+> [InlineData(100.0)]
+> public async Task UpdateEnrollmentGradeAsync_ValidGrade_SavesExactValue(double expectedGrade)
+> {
+>     var enrollments = await _databaseService.GetEnrollmentsAsync();
+>     var target = enrollments.First();
+>
+>     int updated = await _databaseService.UpdateEnrollmentGradeAsync(target.Id, expectedGrade);
+>     var refreshed = (await _databaseService.GetEnrollmentsAsync()).First(e => e.Id == target.Id);
+>
+>     Assert.Equal(1, updated);
+>     Assert.Equal(expectedGrade, refreshed.Grade);
+> }
+> ```
+
+### שלב 5: בונים, מריצים ומוודאים שהבדיקה באמת "תופסת" שגיאות
+1. שמרו את הקובץ ובצעו **Build Solution** — הבדיקה החדשה תופיע מיד ברשימה ב-**Test Explorer** (VS) או ב-**Unit Tests** (Rider).
+2. הריצו את הבדיקה החדשה (קליק ימני ➡️ **`Run`**) וודאו שהיא עוברת בירוק (`Passed`).
+3. **בדיקת שפיות ("Red → Green"):** רוצים להיות בטוחים ב-100% שהבדיקה באמת בודקת משהו? שנו לרגע את הערך הצפוי ב-`Assert.Equal` לערך שגוי (למשל `"שם שגוי"`), הריצו וודאו שהיא נהיית **אדומה (`Failed`)**, ואז החזירו לערך הנכון והריצו שוב לירוק!
+
+### שלב 6: ✍️ נסו בעצמכם!
+לאחר סיום שלב 3, נסו להוסיף בעצמכם ל-`DatabaseServiceTests.cs` אחת משתי הבדיקות הבאות ולהריץ אותה:
+1. **`EnrollStudentAsync_DuplicateEnrollment_ReturnsZero`**: בדקו שניסיון לרשום תלמיד שכבר רשום לאותו קורס מחזיר `0` ואינו יוצר רשומה כפולה.
+2. **`DeleteTeacherAsync_RemovesTeacherAndOwnedCourses`**: בדקו שמחיקת מורה מוחקת גם את הקורסים שלו ואינה משאירה קורסים יתומים במסד.
+
+---
+
+חזרה למסמך המשימה הראשי: [00-Master-Assignment.pdf](./Assignment/00-Master-Assignment.pdf) | מעבר לשלב 1: [01-Nuget-Packages-And-Models.pdf](./01-Nuget-Packages-And-Models.pdf).

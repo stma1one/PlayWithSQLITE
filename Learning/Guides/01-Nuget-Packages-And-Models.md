@@ -11,9 +11,10 @@
 
 ## 1. התקנת חבילות ה-NuGet המאושרות (ממשק ויזואלי — Stable בלבד!)
 
-בפרויקט .NET MAUI נשתמש בשתי חבילות מאושרות בלבד:
+בפרויקט .NET MAUI נשתמש בחבילות המאושרות הבאות (בגרסאות יציבות — `Stable` בלבד):
 1. **`sqlite-net-pcl`** (גרסה יציבה — Stable, למשל `1.11.285`): חבילת הבסיס האסינכרונית המספקת את `SQLiteAsyncConnection`, את דגלי הפתיחה `SQLiteOpenFlags`, ואת דקורציות הטבלאות (`[Table]`, `[PrimaryKey]` ועוד).
-2. **`SQLiteNetExtensions.Async`** (גרסה יציבה — Stable `2.1.0`): הרחבה מעל `sqlite-net-pcl` המאפשרת להגדיר ולטעון קשרי גומלין (`1:1`, `1:N`, `M:N`) באופן אסינכרוני.
+2. **`SQLiteNetExtensions.Async`** + **`SQLiteNetExtensions`** (גרסה יציבה — Stable `2.1.0`): הרחבה מעל `sqlite-net-pcl` המאפשרת להגדיר ולטעון קשרי גומלין (`1:1`, `1:N`, `M:N`) באופן אסינכרוני.
+3. **`Newtonsoft.Json`** (גרסה יציבה אחרונה — **Latest stable `13.0.4`**): **עדכון אבטחה חובה בכל הפרויקטים!** חבילת ה-SQLite Extensions מושכת כתלות פנימית גרסה ישנה ולא מעודכנת של `Newtonsoft.Json` (`9.0.1`) שגורמת לאזהרת אבטחה (`NU1903`). עדכון מפורש של `Newtonsoft.Json` לגרסה היציבה האחרונה בשני הפרויקטים (`PlayWithSQLITE` ו-`PlayWithSQLITE.Tests`) פותר את האזהרה לחלוטין!
 
 > [!IMPORTANT]
 > **כלל ברזל — גרסאות יציבות (`Stable`) בלבד!**
@@ -21,9 +22,9 @@
 
 ### 🖥️ אפשרות א': Visual Studio (Windows — VS 2026 / VS 2022)
 *(עפ"י התיעוד הרשמי של Microsoft: `Install and use a package in Visual Studio`)*
-1. **פתיחת מנהל החבילות:**  
-   - בחלון **Solution Explorer**, בצעו קליק ימני על פרויקט **`PlayWithSQLITE`** (או על צומת `Dependencies` שמתחתיו) ובחרו **`Manage NuGet Packages...`**  
-   *(חלופה מהתפריט העליון: `Project` ➡️ `Manage NuGet Packages...`, או עבור כל ה-Solution: `Tools` ➡️ `NuGet Package Manager` ➡️ `Manage NuGet Packages for Solution...`)*.
+1. **פתיחת מנהל החבילות עבור כל הפתרון (Solution):**  
+   - בחלון **Solution Explorer**, בצעו קליק ימני על שורת ה-**Solution (`PlayWithSQLITE`)** ובחרו **`Manage NuGet Packages for Solution...`**  
+   *(חלופה מהתפריט העליון: `Tools` ➡️ `NuGet Package Manager` ➡️ `Manage NuGet Packages for Solution...`)*.
 2. **הגדרת מקור וחיפוש:**
    - לחצו על הלשונית **`Browse`** (עיון) בחלק העליון.
    - ודאו שבתפריט **`Package source`** (בפינה הימנית העליונה) נבחר **`nuget.org`**.
@@ -32,17 +33,20 @@
    - הקלידו בשורת החיפוש: `sqlite-net-pcl`
    - בחרו בחבילה הרשמית **`sqlite-net-pcl`** (מאת `Frank A. Krueger / Eric Sink`).  
      *(שימו לב: לא לבחור `SQLite.Net-PCL` הישנה ולא `Microsoft.Data.Sqlite`)*.
-   - בחלונית הפרטים בצד ימין: אם פתחתם ברמת ה-Solution סמנו ב-✅ את **`PlayWithSQLITE`** בלבד; ודאו שבשדה `Version` נבחרה **Latest stable**, ולחצו **`Install`**.
+   - בחלונית הפרטים בצד ימין: סמנו ב-✅ את **`PlayWithSQLITE`**, ודאו שבשדה `Version` נבחרה **Latest stable**, ולחצו **`Install`**.
    - בחלון **Preview Changes** לחצו **`OK`**, ואשרו את חלון הרישיון (**I Accept**) אם יופיע.
-4. **התקנת החבילה השנייה (`SQLiteNetExtensions.Async`):**
-   - הקלידו בשורת החיפוש: `SQLiteNetExtensions.Async`
-   - בחרו בחבילה הרשמית (גרסה יציבה `2.1.0`), סמנו את **`PlayWithSQLITE`**, ולחצו **`Install`** ➡️ **`OK`**.
+4. **התקנת חבילות הקשרים (`SQLiteNetExtensions.Async` ו-`SQLiteNetExtensions`):**
+   - הקלידו `SQLiteNetExtensions.Async`, בחרו בגרסה היציבה (`2.1.0`), סמנו ב-✅ את **`PlayWithSQLITE`** ו-**`PlayWithSQLITE.Tests`**, ולחצו **`Install`** ➡️ **`OK`**.
+   - התקינו באותו אופן גם את **`SQLiteNetExtensions`** בגרסה היציבה (`2.1.0`) בשני הפרויקטים (כדי להחליף את התלות הישנה `2.0.0` ולהעלים אזהרות תאימות `NU1701`).
+5. **עדכון `Newtonsoft.Json` לגרסה היציבה האחרונה בכל הפרויקטים (חובה!):**
+   - הקלידו בשורת החיפוש: `Newtonsoft.Json`
+   - בחרו בחבילה הרשמית **`Newtonsoft.Json`** (מאת `James Newton-King`), ודאו שבשדה `Version` נבחרה **Latest stable (`13.0.4`)**, סמנו ב-✅ את **שני הפרויקטים (`PlayWithSQLITE` ו-`PlayWithSQLITE.Tests`)**, ולחצו **`Install` / `Update`** ➡️ **`OK`**.
 
 ### 🍎 אפשרות ב': JetBrains Rider (macOS / Mac)
 *(עפ"י התיעוד הרשמי של JetBrains: `Consume NuGet packages in Rider`)*
 1. **פתיחת חלון ה-NuGet Tool Window:**  
    - פתחו את החלון הייעודי דרך התפריט העליון: **`View`** ➡️ **`Tool Windows`** ➡️ **`NuGet`**  
-   *(חלופות מהירות: קליק ימני על פרויקט `PlayWithSQLITE` ב-Solution Explorer ➡️ `Manage NuGet Packages`, או קיצור המקשים של ה-NuGet Tool Window / תפריט `Tools` ➡️ `NuGet` ➡️ `NuGet Quick List`)*.
+   *(חלופה מהירה: קליק ימני על ה-Solution ב-Solution Explorer ➡️ `Manage NuGet Packages`)*.
 2. **בדיקת Prerelease וחיפוש:**
    - בחלון ה-**NuGet** שנפתח (בלשונית **Packages**), ודאו שתיבת/מתג **`Prerelease`** ליד שורת החיפוש **מכובה (אינו מסומן)**.
    - הקלידו בשורת החיפוש (צד שמאל): `sqlite-net-pcl`.
@@ -50,12 +54,14 @@
    - לחצו על התוצאה **`sqlite-net-pcl`** ברשימה השמאלית.
    - בחלונית הפרטים בצד ימין תראו את רשימת הפרויקטים ב-Solution ואת תיבת בחירת הגרסה (`Version`).
    - ודאו שנבחרה הגרסה היציבה (**Latest stable**), ולחצו על כפתור הפלוס הירוק (**`+` / `Install`**) בשורה של פרויקט **`PlayWithSQLITE`**.
-4. **חזרה על הפעולה לחבילה השנייה:**
-   - חפשו `SQLiteNetExtensions.Async`, בחרו בגרסה היציבה (`2.1.0`), ולחצו על **`+` / `Install`** בשורה של **`PlayWithSQLITE`**.
+4. **התקנת חבילות הקשרים (`SQLiteNetExtensions.Async` ו-`SQLiteNetExtensions`):**
+   - חפשו `SQLiteNetExtensions.Async` (גרסה `2.1.0`) ולאחריה `SQLiteNetExtensions` (גרסה `2.1.0`), ולחצו על **`+` / `Install`** עבור **`PlayWithSQLITE`** ו-**`PlayWithSQLITE.Tests`**.
+5. **עדכון `Newtonsoft.Json` לגרסה היציבה האחרונה בכל הפרויקטים (חובה!):**
+   - חפשו `Newtonsoft.Json`, בחרו בגרסה היציבה האחרונה (**Latest stable `13.0.4`**), ולחצו **`+` / `Install`** (או `Upgrade`) עבור **שני הפרויקטים (`PlayWithSQLITE` ו-`PlayWithSQLITE.Tests`)** כדי לעדכן את הגרסה הישנה (`9.0.1`) שמגיעה עם חבילת ההרחבה.
 
 > [!TIP]
 > **איך מוודאים שההתקנה הצליחה?**
-> ב-Solution Explorer, פתחו את `PlayWithSQLITE` ➡️ `Dependencies` ➡️ `Packages` וודאו ששתי החבילות מופיעות ללא אזהרות שגיאה, וש-**Build Solution** עובר בהצלחה.
+> ב-Solution Explorer, פתחו את `PlayWithSQLITE` ➡️ `Dependencies` ➡️ `Packages` וודאו שכל 4 החבילות (`sqlite-net-pcl`, `SQLiteNetExtensions`, `SQLiteNetExtensions.Async`, `Newtonsoft.Json 13.0.4`) מופיעות ללא אזהרות אבטחה (`NU1903`), וש-**Build Solution** עובר עם **0 Warnings ו-0 Errors**.
 
 ---
 

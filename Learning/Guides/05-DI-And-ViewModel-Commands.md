@@ -253,18 +253,18 @@ private async Task PrevPageAsync()
 
 לאחר שהטמעתם את `TeachersViewModel` (חלק 3) ואת מנגנון הדפדוף ב-`StudentsViewModel` (חלק 4), **ממשו באופן דומה** את שאר הפקודות ב-3 ה-ViewModels:
 
-### 1. [StudentsViewModel.cs](file:///c:/Users/Owner/source/repos/PlayWithSQLITE/PlayWithSQLITE/ViewModels/StudentsViewModel.cs) (השלמה)
+### 1. `StudentsViewModel.cs` (השלמה)
 - אתחלו בבנאי את `LoadStudentsCommand`, `AddStudentCommand` (עם `CanAddStudent` — בדקו באילו Setters כבר נקרא `ChangeCanExecute()`!), ו-`DeleteStudentCommand` (`Command<Student>`).
 - ממשו את `AddStudentAsync()`, את `DeleteStudentAsync(Student? student)` (כולל איפוס `SelectedStudent` ו-`SelectedStudentTranscript` אם נמחק התלמיד הנבחר), ואת `LoadTranscriptForStudentAsync(int studentId)` הקוראת ל-`GetStudentTranscriptAsync` ול-`GetTotalCreditsForStudentAsync`.
 
-### 2. [CoursesViewModel.cs](file:///c:/Users/Owner/source/repos/PlayWithSQLITE/PlayWithSQLITE/ViewModels/CoursesViewModel.cs) (מסך הקורסים)
+### 2. `CoursesViewModel.cs` (מסך הקורסים)
 - אתחלו את `LoadCoursesCommand`, `AddCourseCommand` (עם `CanAddCourse`: דורש גם `NewCourseTitle` וגם `SelectedTeacher != null`!), ו-`DeleteCourseCommand` (`Command<Course>`).
 - ב-`LoadCoursesAsync()`: טענו תחילה את המורים (`GetTeachersAsync()`) לתוך `Teachers` (עבור ה-`Picker`), ואז את הקורסים עם קשרים (`GetCoursesAsync(includeRelations: true)`) לתוך `Courses`.
 - ב-`AddCourseAsync()`: צרו `Course` חדש עם **`TeacherId = SelectedTeacher!.Id`**, שמרו ב-`SaveCourseAsync`, נקו שדות ורעננו.
 
 ![צילום חי מ-Android Emulator (MAUI DevFlow) — מסך הקורסים CoursesPage](../Images/CoursesPage-live.png)
 
-### 3. [ReportsViewModel.cs](file:///c:/Users/Owner/source/repos/PlayWithSQLITE/PlayWithSQLITE/ViewModels/ReportsViewModel.cs) (מסך הדוחות)
+### 3. `ReportsViewModel.cs` (מסך הדוחות)
 - אתחלו את `LoadReportsCommand`, `SeedDataCommand`, `ClearDataCommand`.
 - ב-`LoadReportsAsync()`: קראו ל-`GetCourseGradeSummariesAsync()` ול-`GetStudentDistributionByGradeLevelAsync()`, מלאו את `CourseSummaries` ואת `GradeDistributions`, ועדכנו את `StatusMessage`.
 - **טיפ חשוב ב-`SeedDataAsync()`!** ודאו ש-`IsLoading = false;` מתבצע (בבלוק `finally`) **לפני** הקריאה ל-`await LoadReportsAsync();` — אחרת `LoadReportsAsync()` יראה ש-`IsLoading` עדיין `true` וייצא מיד בלי לרענן את המסך!

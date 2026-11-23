@@ -14,10 +14,14 @@ import os
 import sys
 import re
 import base64
+import shutil
 import argparse
 import subprocess
 import importlib.util
 from pathlib import Path
+from urllib.parse import quote, unquote, urlparse, parse_qs
+
+REL_PDF_SENTINEL = "https://rel-pdf.local/?p="
 
 # Ensure UTF-8 output on Windows consoles
 if sys.platform == "win32":
@@ -169,7 +173,76 @@ def embed_images(html_text: str, base_dir: Path, learning_dir: Path, missing_ima
 
     return re.sub(r'<img\s+src="([^"]+)"\s+alt="([^"]*)"', replace_img, html_text)
 
-def generate_html_document(combined_md: str, project_info: dict, learning_dir: Path, missing_images: list[str]) -> str:
+def rewrite_book_links(html_text: str, embedded_guide_stems: set[str]) -> str:
+    """Turns links to embedded guides into internal #guide-<stem> jumps and external Docs PDFs into relative sentinel URIs."""
+    def replace_href(match):
+        prefix, href, suffix = match.group(1), match.group(2), match.group(3)
+        low = href.lower().strip()
+        if low.startswith(("http://", "https://", "mailto:", "#", "data:")):
+            return match.group(0)
+        if ".pdf" not in low:
+            return match.group(0)
+        filename = Path(href.replace("\\", "/")).name
+        stem = Path(filename).stem
+        if stem in embedded_guide_stems:
+            return f'{prefix}#guide-{stem}{suffix}'
+        rel_to_learning = f"../Docs/{filename}"
+        return f'{prefix}{REL_PDF_SENTINEL}{quote(rel_to_learning, safe="")}{suffix}'
+
+    return re.sub(r'(<a\s+[^>]*href=")([^"]+)(")', replace_href, html_text, flags=re.IGNORECASE)
+
+
+def rewrite_pdf_relative_links(pdf_path: Path) -> int:
+    """Converts sentinel URIs inside a generated PDF into ISO 32000-1 relative /GoToR actions."""
+    from pypdf import PdfReader, PdfWriter
+    from pypdf.generic import ArrayObject, BooleanObject, DictionaryObject, NameObject, NumberObject, TextStringObject
+
+    reader = PdfReader(str(pdf_path))
+    writer = PdfWriter()
+    writer.append(reader)
+
+    converted = 0
+    for page in writer.pages:
+        annots = page.get("/Annots")
+        if not annots:
+            continue
+        for annot_ref in annots:
+            annot = annot_ref.get_object()
+            action = annot.get("/A")
+            if not action:
+                continue
+            action_obj = action.get_object()
+            if action_obj.get("/S") != "/URI":
+                continue
+            uri = str(action_obj.get("/URI", ""))
+            if uri.startswith(REL_PDF_SENTINEL):
+                parsed = urlparse(uri)
+                rel_path = unquote(parse_qs(parsed.query).get("p", [""])[0])
+                if not rel_path:
+                    continue
+                filespec = DictionaryObject({
+                    NameObject("/Type"): NameObject("/Filespec"),
+                    NameObject("/F"): TextStringObject(rel_path),
+                    NameObject("/UF"): TextStringObject(rel_path),
+                })
+                annot[NameObject("/A")] = DictionaryObject({
+                    NameObject("/Type"): NameObject("/Action"),
+                    NameObject("/S"): NameObject("/GoToR"),
+                    NameObject("/F"): filespec,
+                    NameObject("/D"): ArrayObject([NumberObject(0), NameObject("/Fit")]),
+                    NameObject("/NewWindow"): BooleanObject(True),
+                })
+                converted += 1
+
+    if converted > 0:
+        tmp_out = pdf_path.with_suffix(".relfixed.pdf")
+        with open(tmp_out, "wb") as f:
+            writer.write(f)
+        shutil.move(str(tmp_out), str(pdf_path))
+    return converted
+
+
+def generate_html_document(combined_md: str, project_info: dict, learning_dir: Path, missing_images: list[str], embedded_guide_stems: set[str] | None = None) -> str:
     from markdown_it import MarkdownIt
     from pygments.formatters import HtmlFormatter
 
@@ -177,6 +250,7 @@ def generate_html_document(combined_md: str, project_info: dict, learning_dir: P
     html_body = md.render(combined_md)
     html_body = transform_callouts(html_body)
     html_body = embed_images(html_body, learning_dir, learning_dir, missing_images)
+    html_body = rewrite_book_links(html_body, embedded_guide_stems or set())
 
     formatter = HtmlFormatter(style="default")
     pygments_css = formatter.get_style_defs('.highlight')
@@ -684,17 +758,19 @@ def main():
         combined_md += "\n\n---\n\n" + diag_text
 
     # Auto-discover all guides in Learning/Guides/ (excluding README index)
+    embedded_guide_stems: set[str] = set()
     if guides_dir.exists():
         guide_files = [p for p in sorted(list(guides_dir.glob("*.md"))) if p.name.lower() != "readme.md"]
         for guide_path in guide_files:
             print(f"Discovered guide: {guide_path.name}")
+            embedded_guide_stems.add(guide_path.stem)
             with open(guide_path, "r", encoding="utf-8") as f:
                 guide_content = f.read()
 
             guide_title = guide_path.stem
             # Clean title for heading
             clean_title = guide_title.replace("-Guide", "").replace("_", " ")
-            combined_md += f"\n\n---\n\n# פרק למידה מעשי – מסך: {clean_title} (פירוק לבלוקים והסבר מלא)\n\n"
+            combined_md += f'\n\n---\n\n<div id="guide-{guide_path.stem}"></div>\n\n# פרק למידה מעשי – מסך: {clean_title} (פירוק לבלוקים והסבר מלא)\n\n'
             # Strip initial H1 to preserve hierarchy
             guide_body = re.sub(r'^#\s+.*?\n', '', guide_content, count=1)
             combined_md += guide_body
@@ -704,7 +780,7 @@ def main():
 
     print(f"Rendering HTML document...")
     missing_images: list[str] = []
-    full_html = generate_html_document(combined_md, project_info, learning_dir, missing_images)
+    full_html = generate_html_document(combined_md, project_info, learning_dir, missing_images, embedded_guide_stems)
     if missing_images:
         print("Error: the learning book references missing local images:", file=sys.stderr)
         for image in sorted(set(missing_images)):
@@ -737,6 +813,7 @@ def main():
         sys.exit(result.returncode)
 
     if output_pdf.exists():
+        rewrite_pdf_relative_links(output_pdf)
         size_kb = output_pdf.stat().st_size / 1024
         print(f"SUCCESS: PDF generated successfully! ({size_kb:.1f} KB)")
         print(f"PDF Location: {output_pdf}")
